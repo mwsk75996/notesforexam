@@ -39,3 +39,4 @@ Hvis du hurtigt skal finde noget:
 - Commands: `09-kommando-cheatsheet.md`
 - vSRX config forklaringer: `11-vsrx-config-forklaringer.md`
 - Rå vSRX/SRX configs: `vsrx-configs/`
+- Netværksdiagrammer: `diagrammer/`
