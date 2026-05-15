@@ -1,6 +1,6 @@
 # Netværk eksamen - overblik
 
-De her noter er lavet ud fra opgaverne i `Netværks eksempler`.
+De her noter er lavet ud fra opgaverne vi har lavet igennem 1 & 2 semester.
 
 De vigtigste emner der går igen:
 
