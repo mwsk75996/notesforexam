@@ -1,6 +1,6 @@
 # Opgaveindeks
 
-Dokumenterne i `Netværks eksempler` dækker cirka de her emner:
+Dokumenterne i `Netværks Opgaver` som vi har arbejdet igennem, dækker cirka de her emner:
 
 ```text
 Assignment 4      Switch, hub, Linux bridge, MAC table
