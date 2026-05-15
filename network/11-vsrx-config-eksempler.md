@@ -1,6 +1,6 @@
 # vSRX config eksempler
 
-Disse eksempler er baseret på dine GitHub repos:
+Disse eksempler er baseret på mine GitHub repos:
 
 ```text
 ass6network    - NAT, zones, policies
