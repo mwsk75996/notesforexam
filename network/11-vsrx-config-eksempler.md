@@ -2,13 +2,11 @@
 
 Disse eksempler er baseret på mine GitHub repos:
 
-```text
-ass6network    - NAT, zones, policies
-ass18network   - DHCP local server, legacy DHCP, DHCP relay
-ass32network   - Source NAT på fysisk SRX
-ass42network   - DNS/DHCP/NAT samlet setup
-ass54network   - address-book, zones og security policies
-```
+- [ass6network](https://github.com/mwsk75996/ass6network) - NAT, zones, policies
+- [ass18network](https://github.com/mwsk75996/ass18network) - DHCP local server, legacy DHCP, DHCP relay
+- [ass32network](https://github.com/mwsk75996/ass32network) - Source NAT på fysisk SRX
+- [ass42network](https://github.com/mwsk75996/ass42network) - DNS/DHCP/NAT samlet setup
+- [ass54network](https://github.com/mwsk75996/ass54network) - address-book, zones og security policies
 
 Jeg har fjernet passwords/secrets fra eksemplerne.
 
@@ -400,4 +398,3 @@ Tjek:
 God eksamenssætning:
 
 På SRX skal tre ting passe samtidig: interface/routing, zones/policies og eventuelt NAT/service config.
-
