@@ -1,6 +1,6 @@
 # Indlejrede systemer og elektronik - overblik
 
-De her noter er lavet ud fra opgaverne i `Indlejrede Eksempler`.
+De her noter er lavet ud fra opgaverne i `Indlejrede Systemer og Elektronik` vi har arbejdet med i 1. & 2. semester.
 
 De vigtigste emner der går igen:
 
