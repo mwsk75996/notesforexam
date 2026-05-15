@@ -17,6 +17,81 @@ Typisk lokal broker:
 mqtt://localhost:1883
 ```
 
+## MQTT i terminalen
+
+Til eksamen kan man nemt vise MQTT med 3 terminaler/konsoller:
+
+1. Broker
+2. Subscriber
+3. Publisher
+
+Konsol 1 - start broker:
+
+```sh
+mosquitto -v
+```
+
+`-v` betyder verbose, så man kan se forbindelser og beskeder i brokerens output.
+
+Konsol 2 - lyt på et topic:
+
+```sh
+mosquitto_sub -h localhost -t test
+```
+
+Konsol 3 - publish en besked:
+
+```sh
+mosquitto_pub -h localhost -t test -m "hello mqtt"
+```
+
+Hvis alt virker, kommer `"hello mqtt"` frem i subscriber-konsollen.
+
+Man kan også subscribe med mere info:
+
+```sh
+mosquitto_sub -h localhost -t test -v
+```
+
+Så viser den både topic og besked:
+
+```text
+test hello mqtt
+```
+
+Publish med QoS:
+
+```sh
+mosquitto_pub -h localhost -t test -m "qos message" -q 1
+```
+
+Subscribe med QoS:
+
+```sh
+mosquitto_sub -h localhost -t test -q 1
+```
+
+Subscribe til alle subtopics under `sensor/`:
+
+```sh
+mosquitto_sub -h localhost -t "sensor/#" -v
+```
+
+Publish til et sensor topic:
+
+```sh
+mosquitto_pub -h localhost -t "sensor/room1/temp" -m "23.4"
+```
+
+Gode terminal flags:
+
+- `-h localhost`: broker host
+- `-p 1883`: broker port
+- `-t test`: topic
+- `-m "hello"`: message/payload
+- `-q 1`: QoS level
+- `-v`: verbose output
+
 Topic eksempel:
 
 ```text
@@ -80,4 +155,3 @@ Debug checklist:
 - Har subscriber en unik `CLIENT_ID`?
 - Er libraries linket i CMake?
 - Hvis subscriber ikke modtager noget, så start subscriber før publisher.
-
