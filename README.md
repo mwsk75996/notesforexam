@@ -1,4 +1,7 @@
 # notesforexam
+
+![Exam notes workspace](assets/readme-hero.png)
+
 Gode noter til eksamen
 
 ## Mapper
