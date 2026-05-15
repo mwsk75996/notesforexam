@@ -1,0 +1,102 @@
+## R2 will relay DHCP traffic to the DHCP service on R1
+## Extended DHCP configuration
+## By Per Dahlstroem
+version 12.1X47-D15.4;
+system {
+    host-name R2;
+    /* User: root Password: Rootpass */
+    root-authentication {
+        encrypted-password "$1$xH9xJoL6$MFOUYnZr4.Qj2NM24XInz/";
+    }
+    services {
+        ssh;
+    }
+}
+interfaces {
+    ge-0/0/1 {
+        unit 0 {
+            family inet {
+                address 192.168.3.1/24;
+            }
+        }
+    }
+    ge-0/0/2 {
+        unit 0 {
+            family inet {
+                address 192.168.4.1/24;
+            }
+        }
+    }
+    ge-0/0/3 {
+        unit 0 {
+            family inet {
+                address 10.10.10.11/24;
+            }
+        }
+    }
+}
+forwarding-options {
+    helpers {
+        bootp {
+            server 10.10.10.10;
+            interface {
+                ge-0/0/1;
+                ge-0/0/2;
+            }
+        }
+    }
+}
+routing-options {
+    static {
+        route 192.168.1.0/24 next-hop 10.10.10.10;
+        route 192.168.2.0/24 next-hop 10.10.10.10;
+    }
+}
+security {
+    policies {
+        from-zone trust to-zone trust {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+    }
+    zones {
+        security-zone trust {
+            interfaces {
+                ge-0/0/1.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            ssh;
+                            dhcp;
+                        }
+                    }
+                }
+                ge-0/0/2.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            ssh;
+                            dhcp;
+                        }
+                    }
+                }
+                ge-0/0/3.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            ssh;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

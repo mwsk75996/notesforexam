@@ -1,0 +1,168 @@
+version 12.1X47-D15.4;
+system {
+    host-name vSRX1;
+    /* User: root Password: Rootpass */
+    root-authentication {
+        encrypted-password "$1$xH9xJoL6$MFOUYnZr4.Qj2NM24XInz/"; ## SECRET-DATA
+    }
+    services {
+        ssh;
+        dhcp-local-server {
+            group USERLAN {
+                interface ge-0/0/3.0;
+            }
+        }
+    }
+}
+interfaces {
+    ge-0/0/1 {
+        unit 0 {
+            family inet {
+                address 192.168.11.1/24;
+            }
+        }
+    }
+    ge-0/0/2 {
+        unit 0 {
+            family inet {
+                address 192.168.12.1/24;
+            }
+        }
+    }
+    ge-0/0/3 {
+        unit 0 {
+            family inet {
+                address 192.168.13.1/24;
+            }
+        }
+    }
+    ge-0/0/4 {
+        unit 0 {
+            family inet {
+                address 10.56.16.80/22;
+            }
+        }
+    }
+}
+routing-options {
+    static {
+        route 0.0.0.0/0 next-hop 10.56.16.1;
+    }
+}
+security {
+    nat {
+        source {
+            rule-set INTERNET-ACCESS {
+                from zone trust;
+                to zone untrust;
+                rule SOURCE-NAT {
+                    match {
+                        source-address 0.0.0.0/0;
+                    }
+                    then {
+                        source-nat {
+                            interface;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    policies {
+        from-zone trust to-zone trust {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone trust to-zone untrust {
+            policy internet-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+    }
+    zones {
+        security-zone trust {
+            interfaces {
+                ge-0/0/1.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            ssh;
+                            dns;
+                            traceroute;
+                        }
+                    }
+                }
+                ge-0/0/2.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            ssh;
+                            dns;
+                            traceroute;
+                        }
+                    }
+                }
+                ge-0/0/3.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            ssh;
+                            dhcp;
+                            dns;
+                            traceroute;
+                        }
+                    }
+                }
+            }
+        }
+        security-zone untrust {
+            interfaces {
+                ge-0/0/4.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            traceroute;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+access {
+    address-assignment {
+        pool USERLAN-POOL {
+            family inet {
+                network 192.168.13.0/24;
+                range USERLAN-RANGE {
+                    low 192.168.13.100;
+                    high 192.168.13.200;
+                }
+                dhcp-attributes {
+                    maximum-lease-time 600;
+                    name-server {
+                        192.168.11.5;
+                    }
+                    router {
+                        192.168.13.1;
+                    }
+                }
+            }
+        }
+    }
+}

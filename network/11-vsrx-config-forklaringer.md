@@ -1,4 +1,4 @@
-# vSRX config eksempler
+# vSRX config forklaringer
 
 Disse eksempler er baseret på mine GitHub repos:
 
