@@ -2,7 +2,7 @@
 
 Her ligger SVG-diagrammer fra netværksopgaverne.
 
-De er gode at bruge sammen med `../10-opgaveindeks.md`, når du hurtigt skal forklare topologi, routing, switching eller services til eksamen.
+De er gode at bruge sammen med `../11-opgaveindeks.md`, når du hurtigt skal forklare topologi, routing, switching eller services til eksamen.
 
 ## Filer
 

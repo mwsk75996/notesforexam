@@ -19,5 +19,4 @@ ass54-vSRX-2-Multizone.json      - ass54network
 
 Forklaringer og copy-paste patterns ligger i:
 
-`../11-vsrx-config-forklaringer.md`
-
+`../10-vsrx-config-forklaringer.md`

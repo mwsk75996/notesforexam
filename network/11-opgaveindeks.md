@@ -37,6 +37,6 @@ Hvis du hurtigt skal finde noget:
 - ESP32/IoT: `07-esp32-og-iot.md`
 - SRX firewall zones: `08-srx-security-zones.md`
 - Commands: `09-kommando-cheatsheet.md`
-- vSRX config forklaringer: `11-vsrx-config-forklaringer.md`
+- vSRX config forklaringer: `10-vsrx-config-forklaringer.md`
 - Rå vSRX/SRX configs: `vsrx-configs/`
 - Netværksdiagrammer: `diagrammer/`
