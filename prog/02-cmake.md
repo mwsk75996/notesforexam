@@ -21,6 +21,7 @@ cmake_minimum_required(VERSION 3.10)
 project(my_project)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(app src/main.cpp)
 ```
@@ -28,19 +29,37 @@ add_executable(app src/main.cpp)
 Med warnings:
 
 ```cmake
-target_compile_options(app PUBLIC -Wall -Wextra -Wfloat-conversion)
+target_compile_options(app PRIVATE -Wall -Wextra -Wfloat-conversion)
 ```
 
 Med include folder:
 
 ```cmake
-target_include_directories(app PUBLIC src)
+target_include_directories(app PRIVATE src)
 ```
 
 Med libraries:
 
 ```cmake
 target_link_libraries(app paho-mqttpp3 paho-mqtt3as)
+```
+
+Eksempel med flere source filer:
+
+```text
+src/
+  main.cpp
+  helper.cpp
+  helper.hpp
+```
+
+```cmake
+add_executable(app
+    src/main.cpp
+    src/helper.cpp
+)
+
+target_include_directories(app PRIVATE src)
 ```
 
 Flere executables:
@@ -60,6 +79,13 @@ cmake --build build --target publisher
 cmake --build build --target subscriber
 ```
 
+Debug build:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+```
+
 Hvis CMake opfører sig mærkeligt, slet build-mappen og prøv igen:
 
 ```sh
@@ -67,4 +93,3 @@ rm -rf build
 cmake -S . -B build
 cmake --build build
 ```
-

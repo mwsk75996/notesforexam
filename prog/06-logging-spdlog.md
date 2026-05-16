@@ -20,9 +20,15 @@ Include:
 Eksempel:
 
 ```cpp
-spdlog::info("Program started");
-spdlog::warn("Temperature is high: {}", temp);
-spdlog::error("Could not connect to broker");
+#include <spdlog/spdlog.h>
+
+int main() {
+    double temp = 31.5;
+
+    spdlog::info("Program started");
+    spdlog::warn("Temperature is high: {}", temp);
+    spdlog::error("Could not connect to broker");
+}
 ```
 
 Format med variabler:
@@ -53,6 +59,18 @@ target_link_libraries(app spdlog::spdlog)
 
 Hvis `find_package` ikke virker, kan det være fordi spdlog ikke er installeret som CMake package på systemet.
 
+Log til fil:
+
+```cpp
+#include <spdlog/sinks/basic_file_sink.h>
+
+int main() {
+    auto logger = spdlog::basic_logger_mt("file_logger", "program.log");
+    logger->info("Program started");
+    logger->warn("Something looks wrong");
+}
+```
+
 God brug i MQTT:
 
 ```cpp
@@ -64,4 +82,3 @@ spdlog::error("MQTT error: {}", exc.what());
 Eksamensting:
 
 Logging gør det nemmere at forstå program flow uden at debugge linje for linje.
-

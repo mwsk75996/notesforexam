@@ -7,17 +7,18 @@ cmake_minimum_required(VERSION 3.10)
 project(programmering)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(spdlog REQUIRED)
 
 add_executable(publisher src/publisher.cpp)
 add_executable(subscriber src/subscriber.cpp)
 
-target_compile_options(publisher PUBLIC -Wall -Wextra -Wfloat-conversion)
-target_compile_options(subscriber PUBLIC -Wall -Wextra -Wfloat-conversion)
+target_compile_options(publisher PRIVATE -Wall -Wextra -Wfloat-conversion)
+target_compile_options(subscriber PRIVATE -Wall -Wextra -Wfloat-conversion)
 
-target_include_directories(publisher PUBLIC src)
-target_include_directories(subscriber PUBLIC src)
+target_include_directories(publisher PRIVATE src)
+target_include_directories(subscriber PRIVATE src)
 
 target_link_libraries(publisher paho-mqttpp3 paho-mqtt3as spdlog::spdlog)
 target_link_libraries(subscriber paho-mqttpp3 paho-mqtt3as spdlog::spdlog)
@@ -31,6 +32,12 @@ target_link_libraries(tests Catch2Main Catch2)
 include(Catch)
 catch_discover_tests(tests)
 enable_testing()
+```
+
+Hvis Catch2 target-navnene ovenfor ikke findes, brug denne i stedet:
+
+```cmake
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
 ```
 
 ## run_pub.sh
@@ -88,5 +95,19 @@ TEST_CASE("temperature must be between 10 and 30", "[temperature]") {
 
     CHECK_FALSE(isTemperatureValid(9.9));
     CHECK_FALSE(isTemperatureValid(30.1));
+}
+```
+
+## Simpel spdlog main
+
+```cpp
+#include <spdlog/spdlog.h>
+
+int main() {
+    spdlog::set_level(spdlog::level::debug);
+
+    spdlog::info("Program started");
+    spdlog::debug("Debug value: {}", 42);
+    spdlog::warn("Example warning");
 }
 ```

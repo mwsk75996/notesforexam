@@ -11,6 +11,8 @@ Include:
 Simpel test:
 
 ```cpp
+#include <catch2/catch_test_macros.hpp>
+
 int add(int a, int b) {
     return a + b;
 }
@@ -59,6 +61,12 @@ catch_discover_tests(tests)
 enable_testing()
 ```
 
+Nyere Catch2-installationer bruger ofte target-navne med namespace:
+
+```cmake
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
+```
+
 Byg og kør tests:
 
 ```sh
@@ -73,7 +81,32 @@ Hvis du vil se mere output:
 ./build/tests -s
 ```
 
+Kør kun tests med et bestemt tag:
+
+```sh
+./build/tests "[publisher]"
+```
+
+Eksempel på test af parsing/validering:
+
+```cpp
+#include <catch2/catch_test_macros.hpp>
+
+#include <string>
+
+bool shouldSubscribe(const std::string& topic, int qos) {
+    return !topic.empty() && qos >= 0 && qos <= 2;
+}
+
+TEST_CASE("subscriber config is valid", "[subscriber]") {
+    CHECK(shouldSubscribe("test", 0));
+    CHECK(shouldSubscribe("sensor/room1", 1));
+
+    CHECK_FALSE(shouldSubscribe("", 1));
+    CHECK_FALSE(shouldSubscribe("test", 3));
+}
+```
+
 God eksamensforklaring:
 
 Tests bruges til at bevise at små dele af programmet virker isoleret. Det er især smart til funktioner som validering, parsing, hashing og payload-format.
-

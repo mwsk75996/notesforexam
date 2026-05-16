@@ -62,6 +62,24 @@ if [ ! -s "$SCRIPT_DIR/src/subscriber.cpp" ]; then
 fi
 ```
 
+Script med argument:
+
+```sh
+#!/usr/bin/env sh
+set -e
+
+NAME="${1:-World}"
+echo "Hello $NAME"
+```
+
+Kør:
+
+```sh
+./hello.sh Mathias
+```
+
+Vigtigt: brug quotes omkring variabler, fx `"$SCRIPT_DIR"`, så scriptet også virker hvis en sti indeholder mellemrum.
+
 Nyttige shell ting:
 
 ```sh
@@ -72,4 +90,3 @@ cd mappe            # gå ind i mappe
 cd ..               # gå en mappe op
 rm -rf build        # slet build mappe
 ```
-
