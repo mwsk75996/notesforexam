@@ -27,10 +27,47 @@ Hvis der er flere `.cpp` filer:
 g++ -std=c++17 main.cpp helper.cpp -o app
 ```
 
+Det er vigtigt at compile alle `.cpp` filer der indeholder kode. Headers (`.h`/`.hpp`) bliver normalt ikke compiled direkte; de bliver inkluderet af `.cpp` filer.
+
 Hvis headers ligger i en `include/` mappe:
 
 ```sh
 g++ -std=c++17 -Iinclude src/main.cpp -o app
+```
+
+Mini eksempel med header og cpp:
+
+```cpp
+// helper.hpp
+#pragma once
+
+int add(int a, int b);
+```
+
+```cpp
+// helper.cpp
+#include "helper.hpp"
+
+int add(int a, int b) {
+    return a + b;
+}
+```
+
+```cpp
+// main.cpp
+#include <iostream>
+
+#include "helper.hpp"
+
+int main() {
+    std::cout << add(2, 3) << "\n";
+}
+```
+
+Compile:
+
+```sh
+g++ -std=c++17 -Wall -Wextra main.cpp helper.cpp -o app
 ```
 
 Typiske fejl:
@@ -43,11 +80,13 @@ Betyder ofte at en `.cpp` fil eller et library mangler at blive linket.
 
 Betyder ofte at en `#include` sti er forkert, eller at `-I...` mangler.
 
-`permission denied` når du kører programmet:
+`permission denied` når du kører et script:
 
 ```sh
-chmod +x ./main
+chmod +x ./run.sh
 ```
+
+Et program compiled med `g++ -o main` bliver normalt executable automatisk. `chmod +x` er mest relevant for `.sh` scripts.
 
 Mini template:
 
@@ -61,4 +100,3 @@ int main() {
     return 0;
 }
 ```
-

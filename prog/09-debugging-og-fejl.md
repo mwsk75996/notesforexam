@@ -27,7 +27,21 @@ cmake --build build
 Compiler warnings er nyttige:
 
 ```cmake
-target_compile_options(app PUBLIC -Wall -Wextra -Wfloat-conversion)
+target_compile_options(app PRIVATE -Wall -Wextra -Wfloat-conversion)
+```
+
+Debug build er bedre når man skal finde fejl:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+```
+
+AddressSanitizer kan finde mange memory-fejl:
+
+```cmake
+target_compile_options(app PRIVATE -fsanitize=address -g)
+target_link_options(app PRIVATE -fsanitize=address)
 ```
 
 Typiske C++ fejl:
@@ -43,6 +57,14 @@ Include path eller filnavn er forkert.
 `segmentation fault`
 
 Programmet bruger memory forkert. Typisk null pointer, out of bounds, eller objekt der ikke findes længere.
+
+Kør med gdb og få backtrace:
+
+```sh
+gdb ./build/app
+run
+bt
+```
 
 `permission denied`
 
@@ -72,3 +94,10 @@ Eller med spdlog:
 spdlog::debug("value = {}", value);
 ```
 
+Hvis programmet aldrig kommer forbi et punkt, sæt prints omkring det:
+
+```cpp
+std::cout << "before connect\n";
+client.connect()->wait();
+std::cout << "after connect\n";
+```

@@ -103,7 +103,15 @@ QoS:
 
 - `0`: send én gang, ingen garanti
 - `1`: leveres mindst én gang
-- `2`: leveres præcis én gang, men er langsommere
+- `2`: leveres præcis én gang mellem client og broker, men er langsommere
+
+Retained message:
+
+En retained message gemmes af broker på topic'et. Nye subscribers får den seneste retained besked med det samme.
+
+```sh
+mosquitto_pub -h localhost -t "sensor/room1/temp" -m "23.4" -r
+```
 
 Paho MQTT C++ include:
 
@@ -138,6 +146,37 @@ const int QOS = 1;
 mqtt::async_client client(SERVER_URI, CLIENT_ID);
 client.connect()->wait();
 client.subscribe(TOPIC, QOS)->wait();
+```
+
+Simpel subscriber der læser én besked:
+
+```cpp
+#include <iostream>
+#include <string>
+
+#include "mqtt/async_client.h"
+
+int main() {
+    const std::string serverURI = "mqtt://localhost:1883";
+    const std::string clientID = "subscriber_1";
+    const std::string topic = "test";
+    const int qos = 1;
+
+    mqtt::async_client client(serverURI, clientID);
+
+    client.start_consuming();
+    client.connect()->wait();
+    client.subscribe(topic, qos)->wait();
+
+    auto msg = client.consume_message();
+    if (msg) {
+        std::cout << msg->get_topic() << ": " << msg->to_string() << "\n";
+    }
+
+    client.unsubscribe(topic)->wait();
+    client.disconnect()->wait();
+    client.stop_consuming();
+}
 ```
 
 I CMake skal Paho libraries linkes:
