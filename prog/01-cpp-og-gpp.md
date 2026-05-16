@@ -84,6 +84,7 @@ Betyder ofte at en `#include` sti er forkert, eller at `-I...` mangler.
 
 ```sh
 chmod +x ./run.sh
+chmod +x ./main
 ```
 
 Et program compiled med `g++ -o main` bliver normalt executable automatisk. `chmod +x` er mest relevant for `.sh` scripts.
