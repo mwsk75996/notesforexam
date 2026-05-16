@@ -66,3 +66,81 @@ God eksamensforklaring:
 
 Hashing er one-way. Encryption er two-way med en key. Derfor kan man verificere et password ved at hashe input og sammenligne med gemt hash, uden at kende original password.
 
+Eksempel med SHA-256 i C++ med OpenSSL:
+
+```cpp
+#include <iostream>
+#include <string>
+#include <openssl/sha.h>
+#include <iomanip>
+#include <sstream>
+
+int main() {
+    std::string text = "hemmeligt";
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+
+    SHA256((unsigned char*)text.c_str(), text.size(), hash);
+
+    std::stringstream ss;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+    }
+
+    std::cout << ss.str() << "\n";
+}
+```
+
+Kompilér med: `g++ sha256.cpp -o sha256 -lssl -lcrypto`
+
+SHA-256 giver altid samme hash for samme input. Hurtigt, men ikke nok til passwords alene.
+
+Eksempel med bcrypt i C++:
+
+```cpp
+#include <iostream>
+#include <string>
+#include <bcrypt/BCrypt.hpp>
+
+int main() {
+    std::string password = "hemmeligt";
+
+    // Generer salt og hash
+    std::string hashed = BCrypt::generateHash(password);
+
+    std::cout << hashed << "\n";
+
+    // Tjek password
+    if (BCrypt::validatePassword(password, hashed)) {
+        std::cout << "OK\n";
+    }
+}
+```
+
+bcrypt er lavet til passwords. Det bruger salt og er langsomt, så det er sværere at brute-force.
+
+Installation og docs:
+
+SHA-256 via OpenSSL:
+
+- Docs: https://docs.openssl.org/3.1/man3/SHA256_Init/
+- Debian: `sudo apt install libssl-dev`
+- Arch: `sudo pacman -S openssl`
+- Windows (vcpkg): `vcpkg install openssl`
+- Windows (manuel): Download fra https://openssl-library.org/source/ og build med CMake/Perl
+
+bcrypt via libbcrypt (trusch/libbcrypt):
+
+- Docs: https://github.com/trusch/libbcrypt
+- Debian/Arch: byg fra source:
+  ```sh
+  git clone https://github.com/trusch/libbcrypt
+  cd libbcrypt
+  mkdir build && cd build
+  cmake ..
+  make
+  sudo make install
+  sudo ldconfig
+  ```
+- Windows: kræver CMake og en C++ compiler (MSVC eller MinGW). Byg fra source som ovenfor, eller brug Windows egen BCrypt API (`bcrypt.h` + `#pragma comment(lib, "bcrypt")`)
+- Windows (vcpkg): `vcpkg install libxcrypt` (understøtter bcrypt hashing)
+
