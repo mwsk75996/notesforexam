@@ -1,5 +1,4 @@
 ![notesforexam](assets/notesforexam-title.png)
-
 ![Exam notes workspace](assets/readme-hero-rounded.png)
 
 Gode noter til eksamen
