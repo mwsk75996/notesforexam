@@ -1,6 +1,4 @@
-# notesforexam
-
-![Exam notes workspace](assets/readme-hero.png)
+![notesforexam](assets/readme-hero-titled.png)
 
 Gode noter til eksamen
 
