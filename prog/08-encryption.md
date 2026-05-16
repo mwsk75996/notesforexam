@@ -25,6 +25,15 @@ Der er en public key og en private key.
 
 Bruges ofte til TLS/HTTPS, login, certificates og key exchange.
 
+Kort ide:
+
+```text
+public key  -> må deles med andre
+private key -> skal kun ejes af dig/serveren
+```
+
+I praksis bruges asymmetric encryption ofte til at udveksle en symmetric key eller til signatures. Man krypterer normalt ikke store filer direkte med RSA.
+
 Gode ord:
 
 - plaintext: original læsbar tekst
@@ -48,6 +57,70 @@ openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -in secret.txt.enc -out secret.
 `-pbkdf2` gør passwordet til en stærkere key-derivation i stedet for en gammel svagere standard.
 
 Til moderne kode bør man helst bruge et library og en authenticated mode som AES-GCM eller ChaCha20-Poly1305.
+
+## Public/private keys i C++ med OpenSSL
+
+Eksempel der laver et RSA keypair og gemmer det i to filer:
+
+```cpp
+#include <cstdio>
+#include <iostream>
+
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+
+int main() {
+    EVP_PKEY* keyPair = EVP_RSA_gen(2048);
+    if (keyPair == nullptr) {
+        std::cerr << "Could not generate key pair\n";
+        return 1;
+    }
+
+    FILE* privateFile = std::fopen("private_key.pem", "wb");
+    if (privateFile == nullptr) {
+        std::cerr << "Could not open private_key.pem\n";
+        EVP_PKEY_free(keyPair);
+        return 1;
+    }
+
+    PEM_write_PrivateKey(privateFile, keyPair, nullptr, nullptr, 0, nullptr, nullptr);
+    std::fclose(privateFile);
+
+    FILE* publicFile = std::fopen("public_key.pem", "wb");
+    if (publicFile == nullptr) {
+        std::cerr << "Could not open public_key.pem\n";
+        EVP_PKEY_free(keyPair);
+        return 1;
+    }
+
+    PEM_write_PUBKEY(publicFile, keyPair);
+    std::fclose(publicFile);
+
+    EVP_PKEY_free(keyPair);
+
+    std::cout << "Created private_key.pem and public_key.pem\n";
+}
+```
+
+Kompilér:
+
+```sh
+g++ -std=c++17 keygen.cpp -o keygen -lcrypto
+```
+
+Efter kørsel:
+
+```text
+private_key.pem  -> hemmelig key, må ikke deles
+public_key.pem   -> public key, kan deles
+```
+
+Samme ide med OpenSSL i terminalen:
+
+```sh
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private_key.pem
+openssl pkey -in private_key.pem -pubout -out public_key.pem
+```
 
 Hvad encryption beskytter:
 
