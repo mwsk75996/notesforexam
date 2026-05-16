@@ -58,9 +58,10 @@ Vigtigt om `std::hash`:
 
 - fint til hash maps og simple øvelser
 - ikke cryptographic secure
+- ikke garanteret samme værdi på tværs af compilere, standard libraries eller programkørsler
 - brug ikke til passwords eller sikkerhed
 
-Til sikker hashing bruger man typisk SHA-256, bcrypt, Argon2 eller lignende. Passwords bør ikke bare hashes med SHA-256 alene; de skal også have salt og en password hashing algoritme.
+Til fil-checks og integritet bruger man typisk en cryptographic hash som SHA-256. Til passwords bruger man en password hashing algoritme som bcrypt, Argon2 eller scrypt. Passwords bør ikke bare hashes med SHA-256 alene; de skal også have salt og en langsom password hashing algoritme.
 
 God eksamensforklaring:
 
@@ -90,7 +91,7 @@ int main() {
 }
 ```
 
-Kompilér med: `g++ sha256.cpp -o sha256 -lssl -lcrypto`
+Kompilér med: `g++ sha256.cpp -o sha256 -lcrypto`
 
 SHA-256 giver altid samme hash for samme input. Hurtigt, men ikke nok til passwords alene.
 
@@ -122,7 +123,7 @@ Installation og docs:
 
 SHA-256 via OpenSSL:
 
-- Docs: https://docs.openssl.org/3.1/man3/SHA256_Init/
+- Docs: https://docs.openssl.org/master/man3/SHA256_Init/
 - Debian: `sudo apt install libssl-dev`
 - Arch: `sudo pacman -S openssl`
 - Windows (vcpkg): `vcpkg install openssl`
@@ -141,6 +142,6 @@ bcrypt via libbcrypt (trusch/libbcrypt):
   sudo make install
   sudo ldconfig
   ```
-- Windows: kræver CMake og en C++ compiler (MSVC eller MinGW). Byg fra source som ovenfor, eller brug Windows egen BCrypt API (`bcrypt.h` + `#pragma comment(lib, "bcrypt")`)
-- Windows (vcpkg): `vcpkg install libxcrypt` (understøtter bcrypt hashing)
-
+- Windows: kræver CMake og en C++ compiler (MSVC eller MinGW). Byg `trusch/libbcrypt` fra source, eller brug et andet password-hashing library.
+- Windows note: Windows' `bcrypt.h` er Microsofts CNG crypto API. Navnet ligner bcrypt, men det er ikke det samme som bcrypt password hashing.
+- vcpkg note: `libxcrypt` understøttes kun på Linux/macOS i vcpkg, så brug ikke den som Windows-løsning.
