@@ -194,3 +194,24 @@ Emner:
 - LED thresholds
 - ESP32 ADC
 - Kalibrering
+
+## Rover projekt - g8
+
+Repo:
+
+- [g8](https://github.com/mwsk75996/g8)
+
+Brug:
+
+- `03-batteri-stroemforsyning-pwm.md`
+- `04-esp32-sensorer-adc-i2c-display.md`
+- `05-sensorer-og-kalibrering.md`
+- `09-mini-templates-og-cheatsheet.md`
+
+Emner:
+
+- PlatformIO
+- ESP32
+- Sensorer
+- Rover/motorstyring
+- Serial monitor og fejlfinding
