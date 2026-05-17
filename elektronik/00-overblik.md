@@ -2,6 +2,10 @@
 
 De her noter er lavet ud fra opgaverne i `Indlejrede Systemer og Elektronik` vi har arbejdet med i 1. & 2. semester.
 
+Projekt-repo:
+
+- [g8 Rover projekt](https://github.com/mwsk75996/g8) - PlatformIO-projekt med ESP32, sensorer og rover-kode.
+
 De vigtigste emner der går igen:
 
 - Ohms lov, effekt og modstande
