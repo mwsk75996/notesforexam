@@ -40,3 +40,10 @@ Hvis du hurtigt skal finde noget:
 - vSRX config forklaringer: `10-vsrx-config-forklaringer.md`
 - Rå vSRX/SRX configs: `vsrx-configs/`
 - Netværksdiagrammer: `diagrammer/`
+
+Repo-links:
+
+- [ass57network](https://github.com/mwsk75996/ass57network) - MQTT publisher/subscriber
+- [ass62network](https://github.com/mwsk75996/ass62network) - ESP32 MQTT sensor
+- [ass6network](https://github.com/mwsk75996/ass6network) - vSRX/SRX config
+- [ass42network](https://github.com/mwsk75996/ass42network) - DNS/DHCP/NAT config

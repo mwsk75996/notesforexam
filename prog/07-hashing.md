@@ -119,6 +119,60 @@ int main() {
 
 bcrypt er lavet til passwords. Det bruger salt og er langsomt, så det er sværere at brute-force.
 
+## libsodium password hashing
+
+Repo-eksempel:
+
+- [libsodium-cryptography-demo](https://github.com/mwsk75996/libsodium-cryptography-demo)
+
+libsodium har en password hashing funktion der selv gemmer algoritme, salt og parametre i hash-strengen:
+
+```cpp
+#include <sodium.h>
+
+char hashedPassword[crypto_pwhash_STRBYTES];
+
+crypto_pwhash_str(
+    hashedPassword,
+    password.c_str(),
+    password.size(),
+    crypto_pwhash_OPSLIMIT_INTERACTIVE,
+    crypto_pwhash_MEMLIMIT_INTERACTIVE
+);
+```
+
+Verificering:
+
+```cpp
+if (crypto_pwhash_str_verify(
+        storedHash.c_str(),
+        password.c_str(),
+        password.size()) == 0) {
+    std::cout << "OK\n";
+}
+```
+
+God forklaring:
+
+`crypto_pwhash_str` er bedre til passwords end almindelig SHA-256, fordi den er designet til at være langsommere og gemme salt/parametre sammen med hashen.
+
+## CHAP challenge-response
+
+CHAP bruges til at bevise at klienten kender en hemmelighed uden at sende selve passwordet.
+
+```text
+1. Client -> server: login request
+2. Server -> client: random challenge
+3. Client -> server: hash/MAC(challenge + secret)
+4. Server -> client: OK eller AFVIST
+```
+
+Vigtigt:
+
+- Serveren skal lave en ny random challenge hver gang.
+- Gamle challenges må ikke kunne genbruges.
+- Ellers kan en attacker lave replay attack.
+
 Installation og docs:
 
 SHA-256 via OpenSSL:

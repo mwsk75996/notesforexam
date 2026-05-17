@@ -82,6 +82,18 @@ God eksamensforklaring:
 
 MQTT bruger broker-modellen, så publisher og subscriber ikke behøver kende hinanden direkte. De skal bare bruge samme broker og topic.
 
+Repo-eksempler:
+
+- [ass57network](https://github.com/mwsk75996/ass57network) - C++ publisher/subscriber med Mosquitto
+- [ass62network](https://github.com/mwsk75996/ass62network) - ESP32 temperatur-sensor der publisher til MQTT
+
+Praktiske fejl fra opgaverne:
+
+- Publisher må ikke antage at den er connected før broker-forbindelsen er klar.
+- Publisher og subscriber skal bruge præcis samme topic.
+- `localhost` virker kun hvis broker kører på samme maskine. Brug brokerens LAN-IP hvis broker kører på en anden maskine.
+- Ekstra mellemrum i topic-navne giver et andet topic.
+
 ## SSH
 
 SSH bruges til krypteret remote login.
@@ -154,4 +166,3 @@ tcp.port == 22
 God eksamensforklaring:
 
 Første gang man forbinder til en SSH-server, accepterer man serverens host key. Den gemmes i `known_hosts`, så klienten senere kan opdage hvis serverens identitet ændrer sig.
-
