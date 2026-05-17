@@ -43,7 +43,17 @@ helper.cpp  -> definitions: hvordan virker det?
 main.cpp    -> bruger funktionerne/classes fra headeren
 ```
 
-En declaration fortæller compileren at noget findes:
+En declaration fortæller compileren at noget findes. En definition indeholder selve koden. Når `main.cpp` inkluderer headeren, kender den funktionen uden at kende hele implementeringen.
+
+Derfor skal `helper.cpp` stadig med i compile/link:
+
+```sh
+g++ -std=c++17 main.cpp helper.cpp -o app
+```
+
+Hvis du kun compiler `main.cpp`, kan compileren godt forstå kaldet til `add`, men linkeren kan ikke finde selve funktionen. Det giver typisk `undefined reference to add`.
+
+Mini eksempel med header og cpp:
 
 ```cpp
 // helper.hpp
@@ -51,8 +61,6 @@ En declaration fortæller compileren at noget findes:
 
 int add(int a, int b);
 ```
-
-En definition indeholder koden:
 
 ```cpp
 // helper.cpp
@@ -62,8 +70,6 @@ int add(int a, int b) {
     return a + b;
 }
 ```
-
-Når `main.cpp` inkluderer headeren, kender den funktionen uden at kende hele implementeringen:
 
 ```cpp
 // main.cpp
@@ -76,13 +82,11 @@ int main() {
 }
 ```
 
-Derfor skal `helper.cpp` stadig med i compile/link:
+Compile:
 
 ```sh
-g++ -std=c++17 main.cpp helper.cpp -o app
+g++ -std=c++17 -Wall -Wextra main.cpp helper.cpp -o app
 ```
-
-Hvis du kun compiler `main.cpp`, kan compileren godt forstå kaldet til `add`, men linkeren kan ikke finde selve funktionen. Det giver typisk `undefined reference to add`.
 
 Hvorfor ikke bare skrive alt i `.hpp`?
 
@@ -113,13 +117,22 @@ Betyder ofte at en `.cpp` fil eller et library mangler at blive linket.
 
 Betyder ofte at en `#include` sti er forkert, eller at `-I...` mangler.
 
-`permission denied` når du kører et script:
+`permission denied` når du kører et script eller program:
 
 ```sh
 chmod +x ./run.sh
+chmod +x ./main
 ```
 
-Et program compiled med `g++ -o main` bliver normalt executable automatisk. `chmod +x` er mest relevant for `.sh` scripts.
+Et program compiled med `g++ -o main` bliver normalt executable automatisk, men hvis du får `permission denied` ved `./main`, så tjek execute permission:
+
+```sh
+ls -l ./main
+chmod +x ./main
+./main
+```
+
+Hvis du stadig får `permission denied`, kan filen ligge på et filesystem mounted med `noexec`, eller du kan være i den forkerte mappe.
 
 Mini template:
 
