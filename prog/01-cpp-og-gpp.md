@@ -2,6 +2,10 @@
 
 `g++` er C++ compileren. Den kan bruges direkte til små programmer uden CMake.
 
+Repo-eksempel:
+
+- [challenges_helloworld](https://github.com/mwsk75996/challenges_helloworld) - små C++ øvelser med hello world, calculator og temperatur-konvertering
+
 Simpel compile:
 
 ```sh

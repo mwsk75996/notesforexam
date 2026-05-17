@@ -98,6 +98,22 @@ TEST_CASE("temperature must be between 10 and 30", "[temperature]") {
 }
 ```
 
+## Simpel GoogleTest test
+
+Se også `11-googletest-ci.md`.
+
+```cpp
+#include <gtest/gtest.h>
+
+int add(int a, int b) {
+    return a + b;
+}
+
+TEST(AddTest, ReturnsSum) {
+    EXPECT_EQ(add(2, 3), 5);
+}
+```
+
 ## Simpel spdlog main
 
 ```cpp

@@ -122,6 +122,57 @@ openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private_key.pe
 openssl pkey -in private_key.pem -pubout -out public_key.pem
 ```
 
+## libsodium encryption demo
+
+Repo-eksempel:
+
+- [libsodium-cryptography-demo](https://github.com/mwsk75996/libsodium-cryptography-demo)
+
+libsodium har højere-level crypto APIs end rå OpenSSL. I repoet bliver en MAC-adresse krypteret på to måder:
+
+```text
+crypto_secretbox_easy -> symmetrisk encryption med samme secret key
+crypto_box_seal      -> asymmetrisk encryption med public/private keypair
+```
+
+Symmetrisk ide:
+
+```cpp
+std::array<unsigned char, crypto_secretbox_KEYBYTES> key{};
+std::array<unsigned char, crypto_secretbox_NONCEBYTES> nonce{};
+
+randombytes_buf(key.data(), key.size());
+randombytes_buf(nonce.data(), nonce.size());
+
+crypto_secretbox_easy(
+    ciphertext.data(),
+    message,
+    messageSize,
+    nonce.data(),
+    key.data()
+);
+```
+
+Asymmetrisk ide:
+
+```cpp
+std::array<unsigned char, crypto_box_PUBLICKEYBYTES> publicKey{};
+std::array<unsigned char, crypto_box_SECRETKEYBYTES> secretKey{};
+
+crypto_box_keypair(publicKey.data(), secretKey.data());
+
+crypto_box_seal(
+    ciphertext.data(),
+    message,
+    messageSize,
+    publicKey.data()
+);
+```
+
+God eksamensforklaring:
+
+Symmetrisk encryption er hurtig, men begge parter skal kende samme key. Asymmetrisk encryption gør det muligt at kryptere med en public key, mens kun private key kan dekryptere.
+
 Hvad encryption beskytter:
 
 ```text

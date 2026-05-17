@@ -215,3 +215,22 @@ Emner:
 - Sensorer
 - Rover/motorstyring
 - Serial monitor og fejlfinding
+
+## Assignment 62 - ESP32 MQTT sensor
+
+Repo:
+
+- [ass62network](https://github.com/mwsk75996/ass62network)
+
+Brug:
+
+- `04-esp32-sensorer-adc-i2c-display.md`
+- `05-sensorer-og-kalibrering.md`
+
+Emner:
+
+- WiFi på ESP32
+- MQTT med PubSubClient
+- DS18B20 temperatur-sensor
+- OneWire
+- retained publish til topic `esp32/temp`

@@ -17,6 +17,12 @@ ass54-vSRX-2.json                - ass54network
 ass54-vSRX-2-Multizone.json      - ass54network
 ```
 
+Repo-links:
+
+- [ass6network](https://github.com/mwsk75996/ass6network)
+- [ass42network](https://github.com/mwsk75996/ass42network)
+- [ass54network](https://github.com/mwsk75996/ass54network)
+
 Forklaringer og copy-paste patterns ligger i:
 
 `../10-vsrx-config-forklaringer.md`

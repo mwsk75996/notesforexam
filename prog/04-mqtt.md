@@ -17,6 +17,12 @@ Typisk lokal broker:
 mqtt://localhost:1883
 ```
 
+Repo-eksempler:
+
+- [ass57network](https://github.com/mwsk75996/ass57network) - C++ MQTT publisher/subscriber med Mosquitto
+- [ass62network](https://github.com/mwsk75996/ass62network) - ESP32 sensor der publisher temperatur til MQTT
+- `mqtt_example/` - lokalt Paho MQTT C++ eksempel i dette repo
+
 ## MQTT i terminalen
 
 Til eksamen kan man nemt vise MQTT med 3 terminaler/konsoller:
@@ -194,3 +200,5 @@ Debug checklist:
 - Har subscriber en unik `CLIENT_ID`?
 - Er libraries linket i CMake?
 - Hvis subscriber ikke modtager noget, så start subscriber før publisher.
+- Hvis broker ikke er på samme maskine, så brug brokerens rigtige IP i stedet for `localhost`.
+- Tjek at topic ikke har ekstra mellemrum i slutningen.

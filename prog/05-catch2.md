@@ -2,6 +2,8 @@
 
 Catch2 bruges til unit tests i C++.
 
+Hvis projektet bruger GoogleTest i stedet, se `11-googletest-ci.md`.
+
 Include:
 
 ```cpp
