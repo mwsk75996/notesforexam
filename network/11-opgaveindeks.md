@@ -38,6 +38,7 @@ Hvis du hurtigt skal finde noget:
 - SRX firewall zones: `08-srx-security-zones.md`
 - Commands: `09-kommando-cheatsheet.md`
 - vSRX config forklaringer: `10-vsrx-config-forklaringer.md`
+- Nginx/webserver: `12-nginx-webserver.md`
 - Rå vSRX/SRX configs: `vsrx-configs/`
 - Netværksdiagrammer: `diagrammer/`
 

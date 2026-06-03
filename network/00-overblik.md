@@ -14,15 +14,16 @@ De vigtigste emner der går igen:
 - Source NAT
 - Security zones og policies på SRX
 - Wireshark analyse
+- HTTP, webserver og nginx
 - MQTT, SSH og ESP32 netværk
 
 God eksamensstruktur når du skal forklare en opgave:
 
 1. Vis/topologi: hvilke enheder og subnets er med?
 2. Forklar IP-plan: hvem har hvilken IP, gateway og subnetmask?
-3. Forklar protokollen: ARP, DHCP, DNS, MQTT, SSH osv.
+3. Forklar protokollen: ARP, DHCP, DNS, HTTP, MQTT, SSH osv.
 4. Vis konfiguration: router, PC, service eller program.
-5. Test: `ping`, `traceroute`, `Wireshark`, `show route`, `dig`, `mosquitto_pub`.
+5. Test: `ping`, `traceroute`, `Wireshark`, `show route`, `dig`, `curl`, `mosquitto_pub`.
 6. Konklusion: hvad beviser testen?
 
 Gode standard tests:
@@ -64,5 +65,6 @@ dhcp
 tcp.port == 1883
 ssh
 http
+tcp.port == 80
+tcp.port == 443
 ```
-

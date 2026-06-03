@@ -70,6 +70,22 @@ nslookup awesome.dk
 nslookup awesome.dk 192.168.10.10
 ```
 
+## Nginx/webserver
+
+```sh
+sudo apt install nginx
+sudo systemctl enable nginx
+sudo systemctl start nginx
+sudo systemctl status nginx
+sudo nginx -t
+sudo systemctl reload nginx
+curl -I http://192.168.11.2
+curl http://awesome.dk
+sudo ss -tulpn | grep ':80'
+sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+```
+
 ## MQTT
 
 ```sh
@@ -104,6 +120,8 @@ dns
 dhcp
 bootp
 http
+tcp.port == 80
+tcp.port == 443
 ssh
 tcp.port == 22
 tcp.port == 1883
@@ -111,4 +129,3 @@ udp.port == 53
 udp.port == 67 || udp.port == 68
 eth.dst == ff:ff:ff:ff:ff:ff
 ```
-
