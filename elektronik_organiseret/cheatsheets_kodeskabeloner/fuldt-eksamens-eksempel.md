@@ -1,18 +1,14 @@
-# Fuldt Eksamens-eksempel: ESP32, OLED, MQTT og MariaDB
+# Eksamens-guide: Indlejrede Systemer (ESP32, OLED & Gassensor)
 
-Dette dokument indeholder en komplet, fuldt funktionsdygtig løsning, der opfylder alle krav i **ITT2 Eksamen - Studerendes forberedelse** PDF-filen.
+Dette dokument er et komplet, samlet kodescenarie fokuseret **udelukkende på Indlejrede Systemer**, baseret på kravene i eksamensforberedelsen.
 
-Løsningen består af:
-1. **PlatformIO Projektopsætning** (`platformio.ini`).
-2. **ESP32 Kode** (`src/main.cpp`) som forbinder til WiFi/MQTT, måler gas (MQ135/MQ2) og temperatur (DS18B20), udskriver på 1.3" OLED-displayet (SH1106) og sender data som JSON via MQTT.
-3. **MariaDB SQL-skript** til oprettelse af databasen og den specifikke tabel.
-4. **Shell Script** til PC3, der abonnerer på MQTT og indsætter data i MariaDB.
+Det dækker opsætningen af **ESP32 Wroom 38-Pin**, **MQ135-MQ2 gassensoren** og **OLED 1.3” I2C** displayet (SH1106 driver) i PlatformIO.
 
 ---
 
-## 1. PlatformIO Opsætning (`platformio.ini`)
+## 1. platformio.ini Konfiguration
 
-Opret et nyt PlatformIO projekt til ESP32, og erstat indholdet af `platformio.ini` med følgende:
+Opret et PlatformIO projekt og indsæt følgende i din `platformio.ini` for at hente de korrekte biblioteker til displayet:
 
 ```ini
 [env:esp32dev]
@@ -20,254 +16,133 @@ platform = espressif32
 board = esp32dev
 framework = arduino
 
-; Serial Monitor hastighed
+; Indstil Serial Monitor hastighed
 monitor_speed = 115200
 
-; Biblioteks-afhængigheder
+; Biblioteker til 1.3" SH1106 OLED
 lib_deps =
-    olikraus/U8g2 @ ^2.35.19               ; Til 1.3" SH1106 OLED
-    knolleary/PubSubClient @ ^2.8          ; Til MQTT
-    paulstoffregen/OneWire @ ^2.3.8         ; Til DS18B20 temperatur-bus
-    milesburton/DallasTemperature @ ^3.9.0   ; Til DS18B20 sensor-logik
+    olikraus/U8g2 @ ^2.35.19
 ```
 
 ---
 
-## 2. ESP32 Firmware (`src/main.cpp`)
+## 2. Firmware til ESP32 (`src/main.cpp`)
 
-Forbindelser på din **ESP32 Wroom 38-Pin**:
-- **OLED 1.3"**: `VCC` -> 3.3V, `GND` -> GND, `SDA` -> GPIO 21, `SCL` -> GPIO 22.
-- **MQ135 / MQ2**: `VCC` -> 5V, `GND` -> GND, `AOUT` -> GPIO 33 (ADC1).
-- **DS18B20**: `VCC` -> 3.3V, `GND` -> GND, `DATA` -> GPIO 19. *Husk $4.7\text{ k}\Omega$ modstand mellem DATA og 3.3V!*
+Dette program kører lokalt på ESP32. Det læser den analoge værdi fra gassensoren, evaluerer luftkvaliteten mod thresholds og udskriver resultaterne løbende på 1.3" OLED-displayet ved hjælp af SH1106-driveren i U8g2.
 
+### Forbindelsesdiagram (Pinout):
+- **OLED 1.3" (I2C)**:
+  - `VCC` -> 3.3V
+  - `GND` -> GND (Fælles stel)
+  - `SDA` -> GPIO 21
+  - `SCL` -> GPIO 22
+- **MQ135 / MQ2 (Gas)**:
+  - `VCC` -> **5V** *(Vigtigt: 5V er påkrævet til sensorens varmelegeme/heater)*
+  - `GND` -> GND
+  - `AOUT` -> GPIO 33 (ADC1)
+
+### Kildekode:
 ```cpp
 #include <Arduino.h>
-#include <WiFi.h>
-#include <PubSubClient.h>
 #include <U8g2lib.h>
 #include <Wire.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
 
-// WiFi og MQTT indstillinger
-const char* ssid = "Dit_WiFi_Navn";
-const char* password = "Dit_WiFi_Kodeord";
-const char* mqtt_server = "192.168.1.100"; // Indtast PC3's IP (MQTT broker)
-const char* mqtt_topic = "esp32/sensor_data";
+#define GAS_PIN 33 // AOUT fra gassensoren tilsluttet analog pin GPIO33 (ADC1)
 
-// Hardware-pins
-#define GAS_PIN 33       // MQ135/MQ2 AOUT tilsluttet GPIO33 (ADC1)
-#define ONE_WIRE_BUS 19  // DS18B20 DATA tilsluttet GPIO19
-
-// Initialisering af display (1.3" SH1106 I2C OLED)
+// Konstruktør til 1.3" I2C OLED (SH1106 controller)
+// U8G2_R0 = ingen rotation, F = fuld framebuffer, HW_I2C = hardware I2C
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
-
-// Initialisering af 1-Wire (DS18B20)
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature tempSensors(&oneWire);
-
-// MQTT og WiFi Objekter
-WiFiClient espClient;
-PubSubClient client(espClient);
-unsigned long lastMsgTime = 0;
-
-void setup_wifi() {
-    delay(10);
-    Serial.println();
-    Serial.print("Forbinder til ");
-    Serial.println(ssid);
-
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.println("\nWiFi forbundet!");
-    Serial.print("IP-adresse: ");
-    Serial.println(WiFi.localIP());
-}
-
-void reconnect_mqtt() {
-    while (!client.connected()) {
-        Serial.print("Forsøger MQTT forbindelse...");
-        String clientId = "ESP32_WROOM_1"; // Unikt Device ID
-        
-        if (client.connect(clientId.c_str())) {
-            Serial.println("forbundet til broker!");
-        } else {
-            Serial.print("fejlede, rc=");
-            Serial.print(client.state());
-            Serial.println(" prøver igen om 5 sekunder");
-            delay(5000);
-        }
-    }
-}
 
 void setup() {
     Serial.begin(115200);
     
-    // Start I2C og Display
+    // Start I2C bussen med SDA=21 og SCL=22
     Wire.begin(21, 22);
+    
+    // Start displayet
     u8g2.begin();
     
-    // Vis opstartsskærm
+    // Opstartsskærm / Status
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_ncenB08_tr);
-    u8g2.drawStr(0, 20, "ESP32 Starter...");
+    u8g2.setFont(u8g2_font_ncenB08_tr); // Vælg skrifttype
+    u8g2.drawStr(0, 15, "ESP32 Wroom Klar");
+    u8g2.drawStr(0, 35, "Varmer sensor op...");
     u8g2.sendBuffer();
 
-    // Start temperatursensor
-    tempSensors.begin();
-
-    // WiFi og MQTT opsætning
-    setup_wifi();
-    client.setServer(mqtt_server, 1883);
-    
-    Serial.println("Gassensor varmer op...");
-    u8g2.clearBuffer();
-    u8g2.drawStr(0, 20, "Varmer sensor op...");
-    u8g2.sendBuffer();
-    delay(5000); // Kortere delay til test (brug 30s+ i virkeligheden)
+    Serial.println("System opstartet. Varmer gassensor op...");
+    delay(5000); // 5 sekunders opstartstest (anbefales 30 sek+ i virkeligheden)
 }
 
 void loop() {
-    if (!client.connected()) {
-        reconnect_mqtt();
+    // 1. Læs den rå analoge værdi fra gassensoren (0 - 4095)
+    int gasRaw = analogRead(GAS_PIN);
+    float voltage = gasRaw * 3.3 / 4095.0; // Omregn til spænding
+
+    // 2. Evaluer luftkvaliteten
+    String statusStr = "";
+    if (gasRaw < 200) {
+        statusStr = "Status: Fremragende";
+    } else if (gasRaw >= 200 && gasRaw <= 350) {
+        statusStr = "Status: Moderat gas";
+    } else {
+        statusStr = "Status: DAARLIG LUFT!";
     }
-    client.loop();
 
-    unsigned long now = millis();
-    if (now - lastMsgTime > 5000) { // Send måling hvert 5. sekund
-        lastMsgTime = now;
+    // Output til Serial Monitor (til debugging)
+    Serial.print("Rå ADC: ");
+    Serial.print(gasRaw);
+    Serial.print("  |  Spænding: ");
+    Serial.print(voltage);
+    Serial.print(" V  |  ");
+    Serial.println(statusStr);
 
-        // 1. Læs temperatur (DS18B20)
-        tempSensors.requestTemperatures();
-        float tempC = tempSensors.getTempCByIndex(0);
+    // 3. Opdater OLED displayet
+    u8g2.clearBuffer();          // Ryd framebufferen
+    u8g2.setFont(u8g2_font_ncenB08_tr);
+    
+    // Overskrift
+    u8g2.drawStr(0, 15, "--- LUFTKVALITET ---");
+    
+    // Måleværdier
+    char gasValStr[32];
+    sprintf(gasValStr, "Raa ADC: %d", gasRaw);
+    u8g2.drawStr(0, 35, gasValStr);
+    
+    char voltValStr[32];
+    sprintf(voltValStr, "Spaending: %.2f V", voltage);
+    u8g2.drawStr(0, 50, voltValStr);
+    
+    // Status
+    u8g2.drawStr(0, 64, statusStr.c_str());
+    
+    u8g2.sendBuffer();           // Tegn skærmbilledet
 
-        // 2. Læs Gas rå ADC (MQ135/MQ2)
-        int gasRaw = analogRead(GAS_PIN);
-
-        // Hvis temperatursensoren ikke svarer, sæt standardfejl
-        if (tempC == DEVICE_DISCONNECTED_C) {
-            tempC = 0.0;
-            Serial.println("Fejl: DS18B20 ikke fundet.");
-        }
-
-        // 3. Opdater OLED Display
-        u8g2.clearBuffer();
-        u8g2.setFont(u8g2_font_ncenB08_tr);
-        u8g2.drawStr(0, 15, "--- SENSORDATA ---");
-        
-        char tempStr[32];
-        sprintf(tempStr, "Temp: %.2f C", tempC);
-        u8g2.drawStr(0, 35, tempStr);
-        
-        char gasStr[32];
-        sprintf(gasStr, "Gas rå: %d", gasRaw);
-        u8g2.drawStr(0, 55, gasStr);
-        u8g2.sendBuffer();
-
-        // 4. Send JSON payload over MQTT
-        // Payload form: {"temp": 24.50, "gas": 185, "device_id": "ESP32_WROOM_1"}
-        String payload = "{";
-        payload += "\"temp\":";
-        payload += String(tempC, 2);
-        payload += ",\"gas\":";
-        payload += gasRaw;
-        payload += ",\"device_id\":\"ESP32_WROOM_1\"";
-        payload += "}";
-
-        Serial.print("Sender MQTT payload: ");
-        Serial.println(payload);
-        client.publish(mqtt_topic, payload.c_str());
-    }
+    delay(1000); // Tag måling hvert sekund
 }
 ```
 
 ---
 
-## 3. MariaDB Database Setup (`database_setup.sql`)
+## 3. KiCad Symbolforberedelse til Eksamen
 
-Kør følgende SQL-kommandoer i din MariaDB terminal på PC'en for at oprette den database og tabelstruktur, som eksamensforberedelsen kræver:
+Eksamensforberedelsen kræver, at du har downloadet eller oprettet KiCad symboler for de tre specifikke komponenter. Her er de vigtigste pin-specifikationer til dine symboler:
 
-```sql
--- Opret databasen
-CREATE DATABASE IF NOT EXISTS Sensordata;
-USE Sensordata;
+1. **ESP32 Wroom 38-Pin**:
+   - Skal have 38 pins i alt.
+   - Sørg for at markere `3.3V`, `5V/VIN`, og `GND` tydeligt som strømpins (Power Inputs).
+   - Marker standard I2C pins `GPIO21 (SDA)` og `GPIO22 (SCL)`.
+   - Marker ADC-pins til analoge sensorer (fx `GPIO33` til gassensor).
 
--- Opret tabel med præcis de tre krævede kolonner:
--- 1. Temperaturmåling, 2. Tidsstempel, 3. Device ID
--- Vi bruger backticks ` ` for at tillade mellemrum i kolonnenavnet 'Device ID'
-CREATE TABLE IF NOT EXISTS temperatur_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    `Temperaturmåling` DOUBLE NOT NULL,
-    `Tidsstempel` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `Device ID` VARCHAR(50) NOT NULL
-);
+2. **MQ135-MQ2 Gassensor**:
+   - Typisk 4 pins på breakout: `VCC` (5V), `GND`, `AOUT` (Analog Out), `DOUT` (Digital Out).
+   - Dit skematiske symbol skal have disse 4 pins præcist defineret.
 
--- Vis tabellens struktur for at bekræfte
-DESCRIBE temperatur_log;
-```
+3. **Display OLED 1.3” I2C**:
+   - 4 pins: `VCC` (3.3V), `GND`, `SDA`, `SCL`.
 
 ---
 
-## 4. Shell Script til PC3 (`mqtt_to_mariadb.sh`)
-
-Dette shell script skal køre på din PC3 Linux-maskine. Scriptet lytter (subscribes) på MQTT topic `esp32/sensor_data`, modtager JSON payloads fra ESP32, udpakker værdierne og indsætter dem i MariaDB-databasen.
-
-Scriptet bruger værktøjet **`jq`** til at parse JSON-data på en nem og robust måde. Du kan installere det på Xubuntu med `sudo apt update && sudo apt install jq`.
-
-### Skriptets kode:
-```bash
-#!/bin/bash
-
-# Konfiguration
-MQTT_BROKER="localhost" # PC3's egen IP eller localhost
-MQTT_TOPIC="esp32/sensor_data"
-DB_USER="root"
-DB_PASS="dit_mariadb_kodeord"
-DB_NAME="Sensordata"
-DB_TABLE="temperatur_log"
-
-echo "Starter MQTT-til-MariaDB bro..."
-echo "Abonnerer på topic: $MQTT_TOPIC"
-
-# Lyt på MQTT bussen
-mosquitto_sub -h "$MQTT_BROKER" -t "$MQTT_TOPIC" | while read -r line
-do
-    echo "Modtog data: $line"
-
-    # Parse temperatur og device_id fra JSON ved hjælp af jq
-    temp=$(echo "$line" | jq -r '.temp')
-    device_id=$(echo "$line" | jq -r '.device_id')
-
-    # Tjek om værdierne er valide (ikke tomme)
-    if [ -n "$temp" ] && [ -n "$device_id" ]; then
-        echo "Indsætter i database: Temp=$temp C, Device=$device_id"
-        
-        # Udfør MariaDB indsættelse (Tidsstempel indsættes automatisk via DEFAULT CURRENT_TIMESTAMP)
-        mysql -u "$DB_USER" -p"$DB_PASS" -e \
-        "INSERT INTO ${DB_NAME}.${DB_TABLE} (\`Temperaturmåling\`, \`Device ID\`) VALUES ($temp, '$device_id');"
-        
-        if [ $? -eq 0 ]; then
-            echo "Indsættelse lykkedes!"
-        else
-            echo "Fejl ved databaseindsættelse!"
-        fi
-    else
-        echo "Fejlagtig JSON payload modtaget - ignorerer."
-    fi
-    echo "--------------------------------------"
-done
-```
-
-### Sådan gør du scriptet klar:
-1. Gem scriptet som `mqtt_to_mariadb.sh` på din Linux maskine (PC3).
-2. Gør scriptet eksekverbart i terminalen:
-   ```bash
-   chmod +x mqtt_to_mariadb.sh
-   ```
-3. Kør scriptet:
-   ```bash
-   ./mqtt_to_mariadb.sh
-   ```
+## 4. Fejlfindingstips til Eksamen
+- **Ustabil I2C-forbindelse / "sne" på skærmen**: Tjek om du har byttet om på SDA (GPIO21) og SCL (GPIO22). Dobbelttjek at du anvender `U8G2_SH1106_128X64_NONAME_F_HW_I2C` konstruktøren i koden i stedet for en standard SSD1306 driver.
+- **Fælles GND**: Husk at forbinde alle GND-ben (ESP32 GND, OLED GND og gassensorens GND) sammen på dit breadboard. Uden fælles GND vil målingerne svinge vildt eller fejle helt.
+- **Gassensor-spænding**: Gassensoren skal have 5V ind på VCC. Hvis du ved en fejl slutter den til 3.3V, vil varmelegemet ikke fungere, og målingerne bliver statiske eller ubrugelige.
