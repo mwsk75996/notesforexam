@@ -153,51 +153,96 @@ Vigtigt med WiFi:
 
 > På mange ESP32 boards kan ADC2 give problemer mens WiFi er aktivt. Derfor er ADC1 pins ofte det sikreste valg til sensorer i WiFi-projekter.
 
-## I2C
+## ESP32 Wroom 38-Pin Pinout og Hardware-layout
 
-I2C bruges ofte til sensorer og OLED display.
+ESP32 Wroom 38-Pin er det specifikke board til eksamen. Det er vigtigt at kende dets pin-grupper:
+- **Strømforsyning**:
+  - `VIN / 5V`: Ekstern 5V spændingsindgang (eller strøm fra USB-C).
+  - `3.3V`: Output fra den indbyggede LDO regulator (må max belastes med ca. 500-800mA til delte sensorer).
+  - `GND`: Fælles stel (Ground).
+- **Analog Input (ADC)**:
+  - **ADC1**: GPIO32-39. **Disse er sikre at bruge når WiFi kører.**
+  - **ADC2**: GPIO0, 2, 4, 12-15, 25-27. *Kan IKKE bruges stabilt samtidigt med at WiFi-senderen er aktiv.*
+  - **Input-Only Pins**: GPIO34, 35, 36 (VP), 39 (VN) har ingen interne pull-up/pull-down modstande og kan **kun** bruges som input.
+- **Kommunikations-pins (Default)**:
+  - **I2C**: SDA (GPIO21), SCL (GPIO22).
+  - **SPI (VSPI)**: MOSI (GPIO23), MISO (GPIO19), SCLK (GPIO18), CS (GPIO5).
+  - **UART0 (USB debug)**: TX (GPIO1), RX (GPIO3).
+  - **UART2**: TX2 (GPIO17), RX2 (GPIO16).
 
-Typiske pins på ESP32:
+---
 
-```text
-SDA = GPIO 21
-SCL = GPIO 22
-```
+## Kommunikationsprotokoller: I2C, SPI, UART
 
-Eksempler på I2C-enheder fra opgaverne:
+Når mikrokontrolleren snakker med sensorer og displays, bruges seriel kommunikation. Protokollerne adskiller sig på hastighed, antal ledninger og netværksstruktur.
 
-- BMP280 tryk/temperatur
-- OLED display
-- GY-521 MPU6050 accelerometer/gyro
-- HMC5883L / GY-271 kompas
-- ADS1115 ADC
+### Transmissionsretninger (Duplex-tilstande)
+1. **Simplex**: Én-vejs kommunikation. Data sendes kun fra sender til modtager (fx en simpel temperatursensor med en enkelt data-ledning, der kun sender).
+2. **Half-duplex**: To-vejs kommunikation, men **kun én retning ad gangen**. Enhederne skal skiftes til at sende og modtage på samme linje (fx I2C).
+3. **Full-duplex**: Simultan to-vejs kommunikation. Begge enheder kan sende og modtage samtidigt, typisk via to separate ledninger (fx UART og SPI).
 
-Typisk kode:
+### Sammenligningstabel for protokoller:
 
+| Protokol | Type | Ledninger (ex. strøm) | Duplex | Hastighed | Enheder (Netværk) | Pull-up påkrævet? |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **UART** | Asynkron (intet clock-signal) | 2 (TX, RX) | Full-duplex | Langsom til medium (typisk 115200 bps) | Point-to-Point (kun 2 enheder) | Nej (normalt drevet aktivt) |
+| **I2C** | Synkron (clock-styret) | 2 (SDA, SCL) | Half-duplex | Medium (100 kHz - 400 kHz) | Multi-master / Multi-slave (adresse-baseret) | **Ja** (SDA/SCL skal have pull-up modstande til VCC, typisk 4.7k$\Omega$) |
+| **SPI** | Synkron | 3-4+ (MOSI, MISO, SCK, CS/SS) | Full-duplex | Meget hurtig (flere MHz) | 1 Master, flere slaves (kræver en CS-linje pr. slave) | Nej |
+
+---
+
+## I2C detaljer på ESP32
+
+I2C (Inter-Integrated Circuit) bruges til at forbinde mange sensorer på de samme to ledninger. Hver enhed har en unik hex-adresse (fx `0x3C` eller `0x76`).
+
+Eksempler på I2C-enheder:
+- **BMP280** tryk/temperatur (typisk adresse `0x76` eller `0x77`)
+- **Display OLED 1.3”** (typisk adresse `0x3C`)
+- **GY-521 MPU6050** accelerometer/gyro (typisk adresse `0x68`)
+- **ADS1115** ekstern ADC (typisk adresse `0x48`)
+
+### Hvorfor Pull-up modstande på I2C?
+I2C-bussen bruger "open-drain" udgange. Det betyder, at enhederne kun kan trække signalet aktivt **LOW** (til GND). De kan ikke tvinge linjen HIGH. Derfor skal der være eksterne **pull-up modstande** (fx $4.7\text{ k}\Omega$) til $3.3\text{V}$ på både `SDA` og `SCL`. Uden dem vil signalet forblive LOW, og kommunikationen fejler. De fleste sensor-breakoutboards har disse modstande indbygget.
+
+---
+
+## OLED display 1.3” I2C (SH1106)
+
+Til eksamen skal der medbringes et **Display OLED 1.3” I2C 128x64**. 
+- **Vigtig forskel**: Standard 0.96" displayet bruger normalt en `SSD1306` driver, men det større 1.3" display bruger næsten altid en **SH1106** driver.
+- Hvis du bruger et SSD1306-bibliotek til en SH1106, vil skærmen ofte være forskudt med 2 pixels i siderne eller vise "sne" (støj).
+- **Løsning i PlatformIO**: Brug `U8g2` biblioteket. Det understøtter SH1106 direkte og er meget stabilt.
+
+### U8g2 initialisering af 1.3" I2C OLED (SH1106):
 ```cpp
+#include <Arduino.h>
+#include <U8g2lib.h>
 #include <Wire.h>
 
+// SH1106 driver til 128x64 I2C skærm. 
+// U8G2_R0 = ingen rotation, F = Full framebuffer (kræver lidt RAM), HW_I2C = hardware I2C pins.
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+
 void setup() {
-    Wire.begin();
+    // Start I2C med standard pins SDA=21, SCL=22
+    Wire.begin(21, 22);
+    
+    // Start displayet
+    u8g2.begin();
+}
+
+void loop() {
+    u8g2.clearBuffer();          // Ryd skærm-bufferen
+    u8g2.setFont(u8g2_font_ncenB08_tr); // Vælg skrifttype
+    u8g2.drawStr(0, 15, "Temperatur: 24.5 C");
+    u8g2.drawStr(0, 30, "Gas: OK");
+    u8g2.sendBuffer();           // Send bufferen til skærmen
+    delay(1000);
 }
 ```
 
-## OLED display
-
-OLED bruges til at vise målinger uden at være afhængig af serial monitor.
-
-Typisk vises:
-
-- Temperatur
-- Fugtighed
-- Tryk
-- Afstand
-- Komfort-score
-- Sensorstatus
-
-God eksamensforklaring:
-
-> Serial monitor er god til debugging, men OLED gør systemet mere selvstændigt, fordi brugeren kan aflæse værdier direkte på enheden.
+**God eksamensforklaring**:
+> Serial monitor er god til debugging, men OLED-displayet gør systemet selvstændigt. Ved at bruge I2C-bussen (SDA/SCL) kan vi dele ledninger med andre I2C-sensorer (fx BMP280), så vi sparer GPIO-pins på ESP32. Da displayet er 1.3", bruger vi SH1106-driveren i U8g2-biblioteket for at undgå pixel-forskydning.
 
 ## Normalisering
 

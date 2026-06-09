@@ -56,40 +56,80 @@ if (light < 2500) {
 
 ## Wheatstonebro
 
-En Wheatstonebro bruges til at måle små ændringer i modstand.
+En Wheatstonebro bruges til at måle meget små ændringer i modstand med høj præcision (fx i strain gauges, vægtceller/load cells eller præcise temperaturmålinger).
 
-Den består af to spændingsdelere ved siden af hinanden. Man måler forskellen mellem midtpunkterne.
-
-Den bruges typisk til:
-
-- Strain gauges
-- Vægt/load cells
-- Små sensorændringer
-- Præcise modstandsmålinger
-
-God forklaring:
-
-> En Wheatstonebro sammenligner to spændingsdelere. Hvis broen er i balance, er spændingsforskellen mellem midtpunkterne 0V. Hvis en modstand ændrer sig, opstår der en spændingsforskel, som kan måles.
-
-## Thevenin
-
-Thevenin bruges til at forenkle et større kredsløb til én spændingskilde og én seriemodstand.
+Broen består af to parallelle spændingsdelere forbundet til samme spændingskilde ($V_{in}$). Vi måler spændingsforskellen ($V_G$) mellem de to midtpunkter A og B:
 
 ```text
-Stort kredsløb -> Vth + Rth
+       Vin
+      /   \
+     R1   R3
+     /     \
+    A-------B  <-- Mål VG (spændingsforskel VA - VB)
+     \     /
+     R2   Rx (Sensor)
+      \   /
+       GND
 ```
 
-Fremgangsmåde:
+### Formel for differentiel spænding ($V_G$):
+$$V_G = V_A - V_B = V_{in} \cdot \left( \frac{R_2}{R_1 + R_2} - \frac{R_x}{R_3 + R_x} \right)$$
 
-1. Fjern load-modstanden.
-2. Find åben-kreds-spændingen. Det er `Vth`.
-3. Sluk uafhængige kilder for at finde `Rth`.
-4. Tegn kredsløbet som `Vth` i serie med `Rth` og load.
+### Balancebetingelse:
+Når broen er i balance, er spændingsforskellen $V_G = 0\text{V}$. Det betyder at:
+$$\frac{R_1}{R_2} = \frac{R_3}{R_x} \implies R_x = \frac{R_3 \cdot R_2}{R_1}$$
 
-Når man slukker kilder:
+Hvis $R_x$ (sensoren) ændrer sig bare en lille smule, kommer broen ud af balance, og $V_G$ bliver ulig 0V. Dette lille spændingssignal forstærkes typisk med en instrumentationsforstærker før det sendes til en ADC.
 
-- Ideel spændingskilde bliver til kortslutning.
-- Ideel strømkilde bliver til åben forbindelse.
+**Kort eksamensforklaring**:
+> En Wheatstonebro sammenligner to spændingsdelere. Hvis broen er i balance, er spændingsforskellen mellem midtpunkterne 0V. Hvis sensorens modstand $R_x$ ændrer sig, opstår der en lille spændingsforskel $V_G$, som vi kan måle. Det gør det muligt at registrere mikroskopiske ændringer, som en normal spændingsdeler ikke ville have opløsning nok til at fange.
+
+---
+
+## Thevenin og Norton
+
+Thevenin og Norton bruges til at forenkle komplekse, lineære kredsløb med flere modstande og kilder til et simpelt ækvivalent kredsløb set fra en loads (fx en sensors) synspunkt.
+
+### Thevenin-ækvivalent (Spændingsform)
+Forenkler kredsløbet til én spændingskilde ($V_{th}$) i serie med én modstand ($R_{th}$).
+```text
+  Stort kredsløb  -->  Vth --- [Rth] --- A
+                                         |  <-- Load (RL) tilkobles her
+                                         B (GND)
+```
+**Fremgangsmåde**:
+1. **Fjern load-modstanden** ($R_L$) så terminalerne A og B er åbne.
+2. **Find $V_{th}$**: Beregn spændingen mellem A og B. Dette kaldes åben-kreds-spændingen ($V_{oc}$).
+3. **Find $R_{th}$**: Sluk alle uafhængige kilder i kredsløbet og find modstanden set mellem A og B:
+   - En ideel spændingskilde erstattes med en **kortslutning** (en ledning).
+   - En ideel strømkilde erstattes med en **åben forbindelse** (fjernes).
+4. **Tegn kredsløbet** med $V_{th}$ i serie med $R_{th}$ og $R_L$.
+
+---
+
+### Norton-ækvivalent (Strømform)
+Forenkler kredsløbet til én strømkilde ($I_N$) i parallel med én modstand ($R_N$).
+```text
+                       +-------- A
+                       |        |
+  Stort kredsløb  --> (IN)     [RN]  <-- Load (RL) tilkobles her
+                       |        |
+                       +-------- B
+```
+**Fremgangsmåde**:
+1. Kortslut terminalerne A og B.
+2. **Find $I_N$**: Beregn strømmen, der løber gennem denne kortslutning. Dette kaldes kortslutningsstrømmen ($I_{sc}$).
+3. **Find $R_N$**: Find modstanden set mellem A og B på samme måde som for $R_{th}$. Der gælder altid:
+   $$R_N = R_{th}$$
+
+### Sammenhæng mellem Thevenin og Norton (Kilde-transformation)
+Du kan frit transformere mellem de to ækvivalenter vha. Ohms lov:
+- **Fra Thevenin til Norton**:
+  $$I_N = \frac{V_{th}}{R_{th}}$$
+- **Fra Norton til Thevenin**:
+  $$V_{th} = I_N \cdot R_N$$
+- **Modstanden** er den samme:
+  $$R_{th} = R_N$$
 
 ## Thevenin eksempel
 

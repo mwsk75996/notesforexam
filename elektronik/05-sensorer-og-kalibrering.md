@@ -63,37 +63,90 @@ God forklaring:
 
 > BMP280 sender målinger digitalt over I2C/SPI. ESP32 læser altså ikke en analog spænding her; den kommunikerer med sensoren og får talværdier tilbage fra sensorens interne elektronik.
 
-## MQ-135
+## Sensor- og Aktuatorbegrebet
 
-MQ-135 bruges som gassensor/luftkvalitetssensor.
+- **Sensor**: En transducer, der omsætter en fysisk størrelse (fx varme, tryk, lys eller gaskoncentration) til et elektrisk signal (enten en analog spænding eller digitale data). Det er et **input** til mikrokontrolleren.
+- **Aktuator**: En transducer, der gør det modsatte: Omsætter et elektrisk signal til en fysisk handling (fx bevægelse, lyd eller lys). Det er et **output** fra mikrokontrolleren (fx DC-motorer, servoer, buzzere og lysdioder).
 
-Vigtigt:
+---
 
-- Sensoren har en heater.
-- Den skal varme op før målingen er stabil.
-- I opgaven blev der brugt cirka `30 sekunder` warm-up.
+## Gassensorer: MQ-135 og MQ-2
 
-Eksempel:
+Til eksamen skal I medbringe en **MQ135-MQ2** gassensor.
+- **MQ-135**: Følsom over for luftkvalitet (ammoniak, benzen, alkohol, røg og $\text{CO}_2$).
+- **MQ-2**: Følsom over for brændbare gasser (LPG, butan, propan, metan, brint og røg).
 
-```cpp
-delay(30000); // MQ-135 warm-up
-```
+### Opbygning og opvarmning (Heater)
+Begge sensorer virker ved hjælp af et lille varmelegeme (heater) og et halvlederlag af tindioxid ($\text{SnO}_2$).
+- Når gassensoren opvarmes i ren luft, er modstanden i halvlederlaget høj ($R_0$).
+- Når der er gas til stede, stiger halvlederens ledningsevne, hvilket får dens modstand ($R_s$) til at falde.
+- **VIGTIGT**: Da sensoren indeholder en fysisk heater, skal den varme op for at give stabile målinger. Ved første ibrugtagning skal den køre i 24-48 timer (indbrænding). Før en måling ved eksamen skal sensoren varme op i mindst **2 minutter** (eller 30 sekunder som minimum), før data er pålidelige. Den bliver fysisk lun.
 
-Thresholds fra Nordic Fresh Air:
+### Analog vs. Digital output på breakoutboards
+De fleste MQ-breakoutboards har fire ben (VCC, GND, AOUT, DOUT):
+1. **AOUT (Analog Out)**: Giver en analog spænding ($0-V_{CC}$), som stiger proportionalt med gaskoncentrationen. Læses med `analogRead()`.
+2. **DOUT (Digital Out)**: Giver et digitalt HIGH/LOW signal. Modulet har en indbygget komparator og et lille potentiometer. Ved at dreje på potentiometret sætter man en threshold-grænse. Hvis gassen overskrider grænsen, skifter DOUT tilstand.
 
-```text
-ADC < 200       = god luftkvalitet
-ADC 200-250     = moderat luftkvalitet
-ADC > 250       = dårlig luftkvalitet
-```
+### MQ-135 kalibrering og beregning
+For at få en præcis måling skal sensoren kalibreres i ren luft:
+1. Mål den analoge spænding ($V_{out}$) over sensorens modstand.
+2. Beregn sensorens modstand $R_s$:
+   $$R_s = \frac{V_{CC} - V_{out}}{V_{out}} \cdot R_L$$
+   (hvor $R_L$ er en kendt belastningsmodstand på boardet, typisk $1\text{ k}\Omega$ eller $10\text{ k}\Omega$).
+3. I ren luft bestemmes referenceværdien $R_0$:
+   $$R_0 = \frac{R_s}{\text{CleanAirFactor}}$$
+4. Når $R_0$ er fundet og gemt i koden, kan man beregne forholdet $\frac{R_s}{R_0}$ for at udregne PPM (Parts Per Million) ud fra sensorens databladskurver.
 
-LED-eksempel:
+*Thresholds fra Nordic Fresh Air (rå analoge værdier på ESP32, 0-4095)*:
+- `ADC < 200` = god luftkvalitet (Grøn LED)
+- `ADC 200-250` = moderat luftkvalitet (Gul LED)
+- `ADC > 250` = dårlig luftkvalitet (Rød LED, evt. blink/buzzer)
 
-```text
-Grøn LED  = god luft
-Gul LED   = moderat luft
-Rød LED   = dårlig luft, evt. blink
-```
+---
+
+## Barometer-typer
+
+Et barometer måler atmosfærisk tryk. I emneoversigten nævnes følgende måleteknologier:
+1. **Kviksølvsbarometer**: Klassisk fysik. Lufttrykket presser en kviksølvsøjle op i et glasrør. Meget præcist, men giftigt og stort.
+2. **Aneroidbarometer**: Mekanisk. En forseglet, fleksibel metalæske (vakuumdåse) trækker sig sammen eller udvider sig ved trykændringer, hvilket flytter en viser mekanisk.
+3. **Kapacitivt barometer**: Elektronisk. Trykket deformerer en fleksibel membran, som udgør den ene plade i en kondensator. Afstanden mellem pladerne ændres, hvilket ændrer kapacitansen. Strømforbruget er ekstremt lavt.
+4. **Piezomodstand-barometer (Piezoresistive)**: MEMS (Micro-Electro-Mechanical Systems). Trykket bøjer en mikroskopisk siliciumpyramide, hvilket ændrer halvlederens elektriske modstand. Det er denne type, der sidder i **BMP280**-sensoren. Meget billig og udbredt.
+5. **Piezoelektrisk barometer**: Genererer en elektrisk spænding direkte, når krystallen deformeres af tryk. Fungerer kun ved dynamiske (hurtigt skiftende) trykændringer.
+6. **Micro-elektromagnetisk barometer**: Anvender magnetiske induktionsændringer over en mikroskopisk membran.
+
+---
+
+## Ultralyd vs. Time-of-Flight (ToF)
+
+Begge sensorer bruges til afstandsmåling:
+
+### Ultralyd (fx HC-SR04)
+- **Princip**: Sender en ultralydslydbølge (Trigger) afsted og måler tiden ($t$), indtil ekkoet (Echo) vender tilbage.
+- **Formel**:
+  $$d = \frac{v_{lyd} \cdot t}{2}$$
+  Hvor $v_{lyd} \approx 343\text{ m/s}$ ($0.0343\text{ cm/}\mu\text{s}$ ved $20^\circ\text{C}$). Division med 2 skyldes, at lyden skal rejse frem og tilbage.
+- **Ulempe**: Lydbølger spreder sig kegleformet. Bløde overflader absorberer lyden, og skrå vægge kan kaste ekkoet væk, så målingen fejler.
+
+### Time-of-Flight (ToF, fx VL53L0X)
+- **Princip**: Sender en mikroskopisk, usynlig infrarød laserpuls afsted og måler tiden, det tager for lyset at blive reflekteret tilbage til sensoren.
+- **Fordel**: Ekstremt præcis og måler i en snæver stråle (ikke en bred kegle). Påvirkes ikke af overfladens vinkel eller materiale i samme grad som ultralyd.
+- **Ulempe**: Kan forstyrres af stærkt sollys (infrarød støj) og har kortere rækkevidde (typisk 1-2 meter).
+
+---
+
+## Joystick
+
+Et joystick (som i Rover-styringen) består af:
+- **X-akse og Y-akse**: To uafhængige potentiometre (spændingsdelere) monteret vinkelret på hinanden. Når joysticket bevæges, ændres modstanden, og der leveres to analoge spændinger ($0-3.3\text{V}$). Midtpunktet giver ca. $1.65\text{V}$ (ADC $\approx 2048$).
+- **Z-akse (Knap)**: En indbygget taktil switch, der aktiveres, når man trykker lodret ned på joysticket. Kræver en pull-up modstand (internt i ESP32 eller eksternt), så signalet læses som `LOW` ved tryk.
+
+---
+
+## Buzzere: Aktiv vs. Passiv
+
+En buzzer bruges til at lave lydsignaler (alarmer):
+- **Aktiv buzzer**: Har en indbygget oscillator. Når du tilslutter en DC-spænding (fx 3.3V til en GPIO pin), begynder den straks at hyle med en fast frekvens (typisk 2.5 kHz). Styres simpelt med `digitalWrite(pin, HIGH)`.
+- **Passiv buzzer**: Har ingen indbygget oscillator – det er blot en piezo-skive. Den kræver et AC-signal (fx en firkantbølge / PWM) for at svinge og lave lyd. Ved at ændre PWM-frekvensen kan du generere forskellige toner og spille melodier. Styres på ESP32 med `ledcWriteTone()`.
 
 ## LDR
 

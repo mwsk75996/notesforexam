@@ -201,14 +201,86 @@ Til servoer er signalet anderledes end almindelig LED-PWM. Mange hobbyservoer st
 2.0 ms pulse  -> anden yderposition
 ```
 
-## Praktisk rover-strøm
+## Praktisk rover-strøm og batteriopbygning
 
 Fra jeres batteri/display-opgave:
-
 - Brug fælles GND.
 - Brug sikring på batteriet, fx `3-5A`.
 - Brug main switch.
 - Brug kondensatorer på output, fx `1000 uF`.
 - Servoer/motorer bør ikke drives direkte fra ESP32.
 - ESP32 skal have stabil `3.3V` eller passende `VIN/5V`, afhængigt af board.
-- Flere LiPo i parallel kræver samme spænding før de kobles sammen, fx indenfor `+-0.05V`.
+
+### Batterikombinationer
+- **Serieforbindelse (Series)**: Spændingen lægges sammen, kapaciteten er uændret.
+  $$U_{total} = U_1 + U_2 + \dots, \quad Capacity_{total} = Capacity_{1}$$
+  *Eksempel*: To $3.7\text{V}$ $2000\text{mAh}$ celler i serie (2S) giver $7.4\text{V}$ og $2000\text{mAh}$.
+- **Parallelforbindelse (Parallel)**: Kapaciteten lægges sammen, spændingen er uændret.
+  $$Capacity_{total} = Capacity_1 + Capacity_2 + \dots, \quad U_{total} = U_1$$
+  *Eksempel*: To $3.7\text{V}$ $2000\text{mAh}$ celler i parallel (1S2P) giver $3.7\text{V}$ og $4000\text{mAh}$.
+  *VIGTIGT*: Batterierne skal have nøjagtig samme spænding (indenfor $\pm0.05\text{V}$) inden de kobles sammen for at undgå enorme udligningsstrømme og brandfare.
+
+---
+
+## Dioder og Transistorer
+
+### Dioder (Ensrettere)
+Dioder tillader kun strøm at løbe i én retning (fra Anode [+] til Katode [-], markeret med en ring på komponenten).
+- **Spændingsfald ($U_f$)**: Når dioden leder, falder der en spænding over den.
+  - Almindelig Silicium-diode (fx 1N4007): $\approx 0.7\text{V}$
+  - Schottky-diode (hurtigere, lavere tab): $\approx 0.3\text{V}$ (bruges ofte til ensretning og beskyttelse mod forkert polaritet).
+  - LED (Lysdiode): Typisk $1.8\text{V}$ (rød) til $3.3\text{V}$ (blå/hvid). Kræver altid en seriemodstand for at begrænse strømmen.
+  - Zener-diode: Designet til at lede "baglæns" (breakdown) ved en meget præcis spænding. Bruges til spændingsregulering og beskyttelse.
+
+### Transistorer (BJT og MOSFET)
+Transistorer fungerer som elektroniske kontakter eller forstærkere.
+
+1. **BJT (Bipolar Junction Transistor)**:
+   - **Styring**: Strømstyret. En lille strøm på Basen ($I_B$) styrer en stor strøm mellem Collector ($C$) og Emitter ($E$).
+     $$I_C = \beta \cdot I_B$$
+   - **Typer**: **NPN** (tænder ved HIGH spænding på base i forhold til emitter) og **PNP** (tænder ved LOW spænding).
+   - **Ben**: Base (B), Collector (C), Emitter (E).
+
+2. **MOSFET (Field-Effect Transistor)**:
+   - **Styring**: Spændingsstyret. Spændingen mellem Gate og Source ($U_{GS}$) styrer modstanden ($R_{DS(on)}$) mellem Drain ($D$) og Source ($S$). Da Gate er isoleret, løber der stort set ingen strøm ind i Gate (høj indgangsimpedans).
+   - **Typer**: **N-channel** (tænder når $U_{GS} > U_{threshold}$ - typisk HIGH logik) og **P-channel** (tænder når $U_{GS} < 0$ - typisk LOW logik).
+   - **Ben**: Gate (G), Drain (D), Source (S).
+   - *MOSFET er ideel som switch til høje strømme (fx motorstyring), fordi dens tændte modstand ($R_{DS(on)}$) er ekstremt lav, hvilket minimerer varmeafgivelse.*
+
+---
+
+## Motorstyring (H-bro og Torque)
+
+### H-bro (H-Bridge)
+En H-bro bruges til at styre en DC-motors rotationsretning ved at vende polariteten på spændingen over motoren. Den består af 4 transistorer (switches) tegnet som et H:
+
+```text
+         VCC
+        /   \
+      S1     S3
+      /  Motor\
+     +---( M )---+
+     \           /
+      S2       S4
+        \     /
+          GND
+```
+
+- **Fremad**: Tænd **S1 og S4** (strømmen løber fra venstre mod højre).
+- **Bagud**: Tænd **S3 og S2** (strømmen løber fra højre mod venstre).
+- **Brems**: Tænd **S2 og S4** (kortslutter motoren til GND, hvilket genererer elektromagnetisk modstand).
+- **Kortslutningsfare (Shoot-through)**: Hvis S1 og S2 (eller S3 og S4) tændes samtidigt, opstår en direkte kortslutning mellem VCC og GND, hvilket omgående ødelægger transistorerne!
+
+### Torque (Drejningsmoment) og effektberegning
+- **Moment ($T$ eller $\tau$)**: Kraft gange arm. Måles i Newtonmeter ($\text{Nm}$).
+  $$T = F \cdot r$$
+  Hvor $F$ er kraften i Newton ($\text{N}$) og $r$ er radius/armen i meter ($\text{m}$).
+- **Sammenhæng mellem effekt ($P$) og moment ($T$)**:
+  $$P = T \cdot \omega$$
+  Hvor $P$ er mekanisk effekt i Watt ($\text{W}$), og $\omega$ er vinkelhastigheden i radianer pr. sekund ($\text{rad/s}$).
+  Vinkelhastigheden findes ud fra rotationshastigheden $n$ i RPM (omdrejninger pr. minut):
+  $$\omega = \frac{2\pi \cdot n}{60}$$
+- **DC-motor karakteristik**:
+  - Momentet er direkte proportionalt med strømmen: $T = K_t \cdot I$
+  - Rotationshastigheden er proportional med spændingen: $U \approx K_e \cdot \omega$
+  - Ved høj belastning (højt moment) trækker motoren meget strøm. Hvis motoren blokeres (stall torque), trækker den maksimal strøm, hvilket kan brænde motoren eller driveren af (brownout/overload).
