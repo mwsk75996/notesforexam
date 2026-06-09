@@ -1,0 +1,145 @@
+version 12.1X47-D15.4;
+system {
+    host-name vSRX_1;
+    root-authentication {
+        encrypted-password "$1$4TkbZDtp$6E8C6Bg7K6gnHR31XnJjl0"; ## SECRET-DATA
+    }
+}
+interfaces {
+    ge-0/0/0 {
+        unit 0 {
+            family inet {
+                address 192.168.100.3/24;
+            }
+        }
+    }
+    ge-0/0/1 {
+        unit 0 {
+            family inet {
+                address 192.168.1.1/28;
+            }
+        }
+    }
+    ge-0/0/2 {
+        unit 0 {
+            family inet {
+                address 192.168.2.1/26;
+            }
+        }
+    }
+}
+routing-options {
+    static {
+        route 0.0.0.0/0 next-hop 192.168.100.2;
+    }
+}
+security {
+    nat {
+        source {
+            rule-set nat-out {
+                from zone [ IoT-Net1 IoT-Net2 ];
+                to zone WAN;
+                rule r1 {
+                    match {
+                        source-address 0.0.0.0/0;
+                    }
+                    then {
+                        source-nat {
+                            interface;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    policies {
+        from-zone IoT-Net1 to-zone WAN {
+            policy allow-out {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone IoT-Net2 to-zone WAN {
+            policy allow-out {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone IoT-Net1 to-zone IoT-Net2 {
+            policy allow-inter {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone IoT-Net2 to-zone IoT-Net1 {
+            policy allow-inter {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+    }
+    zones {
+        security-zone WAN {
+            host-inbound-traffic {
+                system-services {
+                    ping;
+                    ssh;
+                }
+            }
+            interfaces {
+                ge-0/0/0.0;
+            }
+        }
+        security-zone IoT-Net1 {
+            host-inbound-traffic {
+                system-services {
+                    all;
+                }
+            }
+            interfaces {
+                ge-0/0/1.0;
+            }
+        }
+        security-zone IoT-Net2 {
+            host-inbound-traffic {
+                system-services {
+                    all;
+                }
+            }
+            interfaces {
+                ge-0/0/2.0;
+            }
+        }
+    }
+}
+applications {
+    application my-http-8000 {
+        application-protocol http;
+        protocol tcp;
+        destination-port 8000;
+    }
+}
